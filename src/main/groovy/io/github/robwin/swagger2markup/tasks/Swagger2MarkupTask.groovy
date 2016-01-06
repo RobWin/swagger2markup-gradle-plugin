@@ -23,6 +23,7 @@ import io.github.robwin.swagger2markup.GroupBy
 import io.github.robwin.swagger2markup.Language
 import io.github.robwin.swagger2markup.OrderBy
 import io.github.robwin.swagger2markup.Swagger2MarkupConverter
+import org.apache.commons.lang3.StringUtils
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.*
 
@@ -68,6 +69,10 @@ class Swagger2MarkupTask extends DefaultTask {
     @Input
     Language outputLanguage
 
+    @Optional
+    @Input
+    String swaggerFile;
+
     Swagger2MarkupTask() {
         inputDir = project.file('src/docs/swagger')
         markupLanguage = MarkupLanguage.ASCIIDOC
@@ -87,41 +92,53 @@ class Swagger2MarkupTask extends DefaultTask {
             logger.debug("SchemasDir: {}", schemasDir)
             logger.debug("MarkupLanguage: {}", markupLanguage)
             logger.debug("SeparatedDefinitions: {}", separatedDefinitions)
-            logger.debug("OuputLanguage: {}", outputLanguage)
+            logger.debug("OutputLanguage: {}", outputLanguage)
+            logger.debug("SwaggerFile: {}", swaggerFile)
          }
-        inputDir.eachFile { file ->
-            if (logger.isDebugEnabled()) {
-                logger.debug("File: {}", file.absolutePath)
+
+        if (StringUtils.isEmpty(swaggerFile)) {
+            inputDir.eachFile { file ->
+                convertSwaggerFileToMarkup(file)
             }
-            Swagger2MarkupConverter.Builder builder = Swagger2MarkupConverter.from(file.absolutePath)
-                    .withMarkupLanguage(markupLanguage);
-            if(pathsGroupedBy){
-                builder.withPathsGroupedBy(pathsGroupedBy)
-            }
-            if(definitionsOrderedBy){
-                builder.withDefinitionsOrderedBy(definitionsOrderedBy)
-            }
-            if(examplesDir){
-                logger.debug("Include examples is enabled.")
-                builder.withExamples(examplesDir.absolutePath)
-            }
-            if(descriptionsDir){
-                logger.debug("Include descriptions is enabled.")
-                builder.withDescriptions(descriptionsDir.absolutePath)
-            }
-            if(schemasDir){
-                logger.debug("Include schemas is enabled.")
-                builder.withSchemas(schemasDir.absolutePath)
-            }
-            if(separatedDefinitions){
-                logger.debug("Separated definitions is enabled.")
-                builder.withSeparatedDefinitions()
-            }
-            if(outputLanguage){
-                builder.withOutputLanguage(outputLanguage)
-            }
-            builder.build().intoFolder(outputDir.absolutePath)
+        } else {
+            convertSwaggerFileToMarkup(new File(inputDir, swaggerFile));
         }
+
         logger.debug("convertSwagger2markup task finished")
+    }
+
+    void convertSwaggerFileToMarkup(File file) {
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("File: {}", file.absolutePath)
+        }
+        Swagger2MarkupConverter.Builder builder = Swagger2MarkupConverter.from(file.absolutePath)
+                .withMarkupLanguage(markupLanguage);
+        if(pathsGroupedBy){
+            builder.withPathsGroupedBy(pathsGroupedBy)
+        }
+        if(definitionsOrderedBy){
+            builder.withDefinitionsOrderedBy(definitionsOrderedBy)
+        }
+        if(examplesDir){
+            logger.debug("Include examples is enabled.")
+            builder.withExamples(examplesDir.absolutePath)
+        }
+        if(descriptionsDir){
+            logger.debug("Include descriptions is enabled.")
+            builder.withDescriptions(descriptionsDir.absolutePath)
+        }
+        if(schemasDir){
+            logger.debug("Include schemas is enabled.")
+            builder.withSchemas(schemasDir.absolutePath)
+        }
+        if(separatedDefinitions){
+            logger.debug("Separated definitions is enabled.")
+            builder.withSeparatedDefinitions()
+        }
+        if(outputLanguage){
+            builder.withOutputLanguage(outputLanguage)
+        }
+        builder.build().intoFolder(outputDir.absolutePath)
     }
 }
